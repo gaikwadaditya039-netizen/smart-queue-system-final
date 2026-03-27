@@ -1,8 +1,14 @@
-from flask import Flask, render_template, redirect, send_file
+from flask import Flask, render_template, redirect, send_file, request
 import qrcode
 import io
 
 app = Flask(__name__)
+
+# 🔐 Users (Login)
+users = {
+    "admin": "1234",
+    "user": "1234"
+}
 
 token_number = 1
 last_token = None
@@ -28,8 +34,26 @@ service_time = {
     "Counter 4": 1.8
 }
 
+# 🔐 LOGIN PAGE
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-@app.route("/")
+        if username in users and users[username] == password:
+            if username == "admin":
+                return redirect("/admin")
+            else:
+                return redirect("/home")
+        else:
+            return "Invalid Credentials"
+
+    return render_template("login.html")
+
+
+# 🏠 HOME PAGE (YOUR ORIGINAL PROJECT)
+@app.route("/home")
 def home():
 
     best_counter = min(counters, key=lambda x: len(counters[x]))
@@ -39,7 +63,7 @@ def home():
     graph_data = [len(q) for q in counters.values()]
 
     waiting_time = {
-        counter: round(len(queue) * service_time[counter] + 1,2)
+        counter: round(len(queue) * service_time[counter] + 1, 2)
         for counter, queue in counters.items()
     }
 
@@ -68,7 +92,7 @@ def join():
 
     token_number += 1
 
-    return redirect("/")
+    return redirect("/home")
 
 
 @app.route("/next/<counter>")
@@ -77,7 +101,7 @@ def next_customer(counter):
     if counters[counter]:
         now_serving[counter] = counters[counter].pop(0)
 
-    return redirect("/")
+    return redirect("/home")
 
 
 @app.route("/reset")
@@ -101,7 +125,7 @@ def reset():
 
     token_number = 1
 
-    return redirect("/")
+    return redirect("/home")
 
 
 @app.route("/admin")
