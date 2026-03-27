@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Smart Queue Management System</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<div class="header text-center p-3 bg-dark text-white">
+
+<h1>Smart Queue Management System</h1>
+
+<h4 id="clock"></h4>
+
+</div>
+
+<div class="container text-center mt-4">
+
+<h3 class="text-success">Recommended Counter: {{ best }}</h3>
+
+<h4>Total People in Queue: {{ total }}</h4>
+
+<a href="/join">
+<button class="btn btn-success">Join Queue</button>
+</a>
+
+<a href="/reset">
+<button class="btn btn-danger">Reset</button>
+</a>
+
+<br><br>
+
+{% if last_token %}
+
+<div class="alert alert-info">
+
+<h4>Your Token Number: {{ last_token }}</h4>
+
+<img src="/qr/{{ last_token }}" width="200">
+
+</div>
+
+{% endif %}
+
+</div>
+
+<hr>
+
+<div class="display text-center p-4 bg-black text-success">
+
+<h2>NOW SERVING</h2>
+
+{% for counter, token in serving.items() %}
+
+<p>
+
+{{ counter }} →
+
+{% if token %}
+Token {{ token }}
+{% else %}
+Waiting
+{% endif %}
+
+</p>
+
+{% endfor %}
+
+</div>
+
+<hr>
+
+<div class="container">
+
+<h3 class="text-center">Queue Load Graph</h3>
+
+<canvas id="queueChart"></canvas>
+
+</div>
+
+<script>
+
+const data = {
+labels:["Counter 1","Counter 2","Counter 3","Counter 4"],
+datasets:[{
+label:"People in Queue",
+data: {{ graph | tojson }},
+backgroundColor:["blue","green","orange","red"]
+}]
+};
+
+new Chart(
+document.getElementById("queueChart"),
+{
+type:"bar",
+data:data,
+options:{scales:{y:{beginAtZero:true}}}
+}
+);
+
+</script>
+
+<hr>
+
+<div class="container">
+
+<div class="row">
+
+{% for counter, queue in counters.items() %}
+
+<div class="col-md-3">
+
+<div class="card p-3 m-2">
+
+<h4>{{ counter }}</h4>
+
+<p>People in Queue: {{ queue|length }}</p>
+
+<p>Waiting Time: {{ wait[counter] }} minutes</p>
+
+<ul>
+
+{% for token in queue %}
+
+<li>Token {{ token }}</li>
+
+{% endfor %}
+
+</ul>
+
+<a href="/next/{{ counter }}">
+<button class="btn btn-primary">Call Next</button>
+</a>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+
+<!-- 🔊 VOICE ANNOUNCEMENT (NO REPEAT) -->
+
+<script>
+
+function speak(text) {
+
+const speech = new SpeechSynthesisUtterance();
+
+speech.text = text;
+speech.volume = 1;
+speech.rate = 1;
+speech.pitch = 1;
+
+window.speechSynthesis.speak(speech);
+
+}
+
+{% for counter, token in serving.items() %}
+
+{% if token %}
+
+var key = "{{ counter }}_last_token";
+
+var lastToken = localStorage.getItem(key);
+
+var currentToken = "{{ token }}";
+
+if(lastToken !== currentToken){
+
+speak("Now serving token " + currentToken + " at {{ counter }}");
+
+localStorage.setItem(key,currentToken);
+
+}
+
+{% endif %}
+
+{% endfor %}
+
+</script>
+
+</body>
+
+</html>
